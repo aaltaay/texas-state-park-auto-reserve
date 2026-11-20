@@ -39,8 +39,10 @@ class TexasParks:
         reported_total: int | None = None
         slug = park.slug
         name = park.name
-        for anchor in _windows(start, end):
-            for page in self._window(park, anchor, nights):
+        # Cells are single nights. A longer stay is open only when every night
+        # is bookable, so the grid has to cover the last night of the last arrival.
+        for anchor in _windows(start, _coverage_end(end, nights)):
+            for page in self._window(park, anchor):
                 pages.append(page)
                 fees.update(page.fees)
                 if page.reported_total:
@@ -99,7 +101,7 @@ class TexasParks:
                 f"No Texas park on the '{letter.upper()}' directory page matches '{query}'."
             ) from exc
 
-    def _window(self, park: Park, anchor: date, nights: int) -> list[ParsedPage]:
+    def _window(self, park: Park, anchor: date) -> list[ParsedPage]:
         url = _details_url(park)
         self._ensure_session(url)
         form = {
@@ -109,7 +111,8 @@ class TexasParks:
             "availStatus": "",
             "submitSiteForm": "true",
             "search": "site",
-            "lengthOfStay": str(nights),
+            # Ask for one night so each cell is that night, not a pre-baked stay.
+            "lengthOfStay": "1",
             "campingDate": anchor.strftime("%m/%d/%Y"),
             "campingDateFlex": "2w",
             "currentMaximumWindow": "5",
@@ -168,6 +171,10 @@ def _coverage_warnings(found: int, reported: int | None) -> list[str]:
     return []
 
 
+def _coverage_end(end: date, nights: int) -> date:
+    return end + timedelta(days=max(nights, 1) - 1)
+
+
 def _windows(start: date, end: date):
     cursor = start
     while cursor <= end:
@@ -196,17 +203,14 @@ def _build_result(
         offers: list[SiteOffer] = []
         walkup = 0
         call_center = 0
+        stay = [cursor + timedelta(days=offset) for offset in range(nights)]
         for site in sites.values():
-            letter = site.nights.get(cursor)
-            if letter is None:
+            letters = [site.nights.get(day) for day in stay]
+            if not letters or letters[0] is None:
                 continue
             site_type = site.site_type or "Unknown"
             total_counts[site_type] += 1
-            if letter == "w":
-                walkup += 1
-            elif letter == "c":
-                call_center += 1
-            elif letter == "a":
+            if _letters_open(letters):
                 open_counts[site_type] += 1
                 low, high = format_price(fees.get(site.site_type))
                 offers.append(
@@ -221,6 +225,10 @@ def _build_result(
                         url=_site_url(park_slug, park_id, site.site_id),
                     )
                 )
+            elif all(letter == "w" for letter in letters):
+                walkup += 1
+            elif all(letter == "c" for letter in letters):
+                call_center += 1
         offers.sort(key=lambda item: (_sort_name(item.site_type), _sort_name(item.name)))
         by_type = []
         for site_type in sorted(total_counts):
@@ -260,6 +268,10 @@ def _build_result(
         fetched_at=datetime.now(timezone.utc),
         warnings=warnings,
     )
+
+
+def _letters_open(letters: list[str | None]) -> bool:
+    return bool(letters) and all(letter == "a" for letter in letters)
 
 
 def _site_url(slug: str, park_id: str, site_id: str) -> str:

@@ -105,6 +105,10 @@ def _absorb(store: dict[str, dict], campsites: dict) -> None:
             continue
         availabilities = current.setdefault("availabilities", {})
         availabilities.update(raw.get("availabilities") or {})
+        incoming = raw.get("quantities")
+        if isinstance(incoming, dict):
+            quantities = current.setdefault("quantities", {})
+            quantities.update(incoming)
 
 
 def _build_result(
@@ -133,7 +137,9 @@ def _build_result(
             total_counts[site_type] = total_counts.get(site_type, 0) + 1
             if not _stay_open(raw, stay):
                 continue
-            spots = _spots(raw, cursor)
+            spots = _spots(raw, stay)
+            if spots < 1:
+                continue
             low, high = _price(rates, site_type, cursor)
             open_counts[site_type] = open_counts.get(site_type, 0) + spots
             offers.append(
@@ -201,16 +207,22 @@ def _status(raw: dict, day: date) -> str | None:
     return str(value)
 
 
-def _spots(raw: dict, day: date) -> int:
+def _spots(raw: dict, stay: list[date]) -> int:
     reserve_type = str(raw.get("campsite_reserve_type") or "").lower()
     # "Non Site-Specific" contains the words "site-specific", so check the prefix.
     if "site-specific" in reserve_type and not reserve_type.startswith("non"):
         return 1
     quantities = raw.get("quantities") or {}
-    quantity = quantities.get(f"{day.isoformat()}T00:00:00Z")
-    if isinstance(quantity, int) and quantity > 0:
-        return quantity
-    return 1
+    amounts: list[int] = []
+    for day in stay:
+        quantity = quantities.get(f"{day.isoformat()}T00:00:00Z")
+        if isinstance(quantity, int):
+            amounts.append(quantity)
+        else:
+            amounts.append(1)
+    if not amounts:
+        return 1
+    return min(amounts)
 
 
 def _price(rates: list[dict], site_type: str, day: date) -> tuple[str | None, str | None]:

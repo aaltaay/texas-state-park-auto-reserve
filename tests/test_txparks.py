@@ -4,7 +4,7 @@ from datetime import date
 from pathlib import Path
 
 from campfind.tx_html import merge_sites, parse_page
-from campfind.txparks import _build_result, _coverage_warnings
+from campfind.txparks import _build_result, _coverage_end, _coverage_warnings
 
 FIXTURES = Path(__file__).parent / "fixtures"
 ANCHOR = date(2026, 12, 28)
@@ -88,6 +88,29 @@ def test_open_counts_by_type_and_price():
     assert jan2.call_center == 1
     assert jan2.walkup == 0
     assert result.warnings == []
+
+
+def test_two_night_stay_requires_every_night():
+    sites = merge_sites([_page("txparks_page.html"), _page("txparks_page2.html", 25)])
+    fees = _page("txparks_page.html").fees
+    result = _build_result(
+        park_id="1200066",
+        park_name="Sample State Park",
+        park_slug="sample-state-park",
+        park_url="https://example.test/park",
+        start=date(2026, 12, 29),
+        end=date(2026, 12, 30),
+        nights=2,
+        sites=sites,
+        fees=fees,
+        warnings=[],
+    )
+    by_date = {day.date: day for day in result.days}
+    # Site 050 is open Dec 29 and reserved Dec 30, so it is not a two-night arrival.
+    assert {site.name for site in by_date[date(2026, 12, 29)].sites} == {"Cabin 1"}
+    # Cabin 1 is blocked on Dec 31. Site 099 is open Dec 30 and Dec 31.
+    assert {site.name for site in by_date[date(2026, 12, 30)].sites} == {"099"}
+    assert _coverage_end(date(2026, 12, 31), 2) == date(2027, 1, 1)
 
 
 def test_short_page_warns():

@@ -61,12 +61,40 @@ def test_later_month_fills_in_missing_days():
             "26004": {
                 "campsite_id": "26004",
                 "availabilities": {"2027-01-01T00:00:00Z": "Available"},
-            }
+            },
+            "99901": {
+                "quantities": {"2027-01-01T00:00:00Z": 3},
+                "availabilities": {"2027-01-01T00:00:00Z": "Available"},
+            },
         },
     )
     assert store["26004"]["availabilities"]["2026-12-04T00:00:00Z"] == "Available"
     assert store["26004"]["availabilities"]["2027-01-01T00:00:00Z"] == "Available"
     assert store["26004"]["site"] == "062"
+    assert store["99901"]["quantities"]["2026-12-04T00:00:00Z"] == 4
+    assert store["99901"]["quantities"]["2027-01-01T00:00:00Z"] == 3
+
+
+def test_pooled_stay_uses_the_smaller_night():
+    park = Park("recgov", "1", "group", "Group", "Lake")
+    raw = {
+        "campsite_id": "1",
+        "site": "GROUP",
+        "loop": "GROUP",
+        "campsite_reserve_type": "Non Site-Specific",
+        "campsite_type": "GROUP",
+        "availabilities": {
+            "2026-12-04T00:00:00Z": "Available",
+            "2026-12-05T00:00:00Z": "Available",
+        },
+        "quantities": {
+            "2026-12-04T00:00:00Z": 4,
+            "2026-12-05T00:00:00Z": 1,
+        },
+    }
+    result = _build_result(park, "Group", date(2026, 12, 4), date(2026, 12, 4), 2, {"1": raw}, [])
+    assert result.days[0].available == 1
+    assert result.days[0].sites[0].spots == 1
 
 
 def test_month_span_crosses_the_year():
