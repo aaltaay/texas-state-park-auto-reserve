@@ -1,0 +1,65 @@
+{
+  "count": 2,
+  "campsites": {
+    "26004": {
+      "campsite_id": "26004",
+      "site": "062",
+      "loop": "CEDAR BREAKS PARK ",
+      "campsite_reserve_type": "Site-Specific",
+      "campsite_type": "STANDARD ELECTRIC",
+      "type_of_use": "Overnight",
+      "min_num_people": 1,
+      "max_num_people": 8,
+      "hide_external": false,
+      "availabilities": {
+        "2026-12-04T00:00:00Z": "Available",
+        "2026-12-05T00:00:00Z": "Reserved",
+        "2026-12-06T00:00:00Z": "Available",
+        "2026-12-07T00:00:00Z": "Available"
+      },
+      "quantities": {
+        "2026-12-04T00:00:00Z": 1,
+        "2026-12-05T00:00:00Z": 1,
+        "2026-12-06T00:00:00Z": 1,
+        "2026-12-07T00:00:00Z": 1
+      }
+    },
+    "26005": {
+      "campsite_id": "26005",
+      "site": "063",
+      "loop": "CEDAR BREAKS PARK",
+      "campsite_reserve_type": "Site-Specific",
+      "campsite_type": "STANDARD NONELECTRIC",
+      "type_of_use": "Overnight",
+      "max_num_people": 6,
+      "hide_external": false,
+      "availabilities": {
+        "2026-12-04T00:00:00Z": "Available",
+        "2026-12-05T00:00:00Z": "Available",
+        "2026-12-06T00:00:00Z": "Closed",
+        "2026-12-07T00:00:00Z": "Available"
+      }
+    },
+    "99901": {
+      "campsite_id": "99901",
+      "site": "GROUP",
+      "loop": "GROUP",
+      "campsite_reserve_type": "Non Site-Specific",
+      "campsite_type": "GROUP STANDARD ELECTRIC",
+      "max_num_people": 20,
+      "hide_external": false,
+      "availabilities": {
+        "2026-12-04T00:00:00Z": "Available",
+        "2026-12-05T00:00:00Z": "Available",
+        "2026-12-06T00:00:00Z": "Available",
+        "2026-12-07T00:00:00Z": "Reserved"
+      },
+      "quantities": {
+        "2026-12-04T00:00:00Z": 4,
+        "2026-12-05T00:00:00Z": 4,
+        "2026-12-06T00:00:00Z": 4,
+        "2026-12-07T00:00:00Z": 0
+      }
+    }
+  }
+}

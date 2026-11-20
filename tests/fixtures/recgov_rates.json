@@ -1,0 +1,29 @@
+{
+  "count": 2,
+  "rates_list": [
+    {
+      "season_start": "2022-01-01T00:00:00Z",
+      "season_end": "2022-12-31T00:00:00Z",
+      "rate_map": {
+        "old": {
+          "site_type": "STANDARD ELECTRIC",
+          "per_night": 20
+        }
+      }
+    },
+    {
+      "season_start": "2026-01-01T00:00:00Z",
+      "season_end": "2026-12-31T00:00:00Z",
+      "rate_map": {
+        "electric": {
+          "site_type": "STANDARD ELECTRIC",
+          "per_night": 30
+        },
+        "nonelectric": {
+          "site_type": "STANDARD NONELECTRIC",
+          "per_night": 20
+        }
+      }
+    }
+  ]
+}
