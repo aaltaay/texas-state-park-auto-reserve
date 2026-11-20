@@ -1,68 +1,101 @@
-# Texas State Park Auto Reserve
+# campfind
 
-An application that automates making Texas State Park reservations through the [Texas State Park website](https://texasstateparks.reserveamerica.com/).
+Look up which campsites are open. You pick a park and the dates. campfind prints how many sites are open each day, and which sites those are.
 
-## Why does this application exist?
-I made this app due to the high volume of people making reservations to visit Texas State Parks during the global pandemic, which has caused the parks to reach daily capacity. Sometimes reservations are cancelled, but the Texas State Park website does not have a notification system to let you know.  
+It does not book anything. You still reserve on the park website.
 
-Rather than manually checking back in on the website every few hours and potentially missing an opportunity to book a coveted slot that someone gives up, I built this application to check the website for me for any openings on specific days I want to book and if a slot opens up it will reserve a spot for me.
+## Quick start
 
-## Can other people use the application?
-Yes, though I did make this with a specific reservation in mind, in theory this should work for any Texas Park reservation through the above website. 
-
-Fill in your personal request information in a .env file, following the `sample.env` file, make sure you have login credentials for the Texas State Park website, and run the application.
-
-### Run the app:
-
-1. Copy `reservation_details.sample.json` to `reservation_details.json` and fill in all of the fields.
-1. Copy `sample.env` to `.env` and fill in your Texas State Park username and password. This will be used to make your reservation.
-1. Run the following commands to run the application:
-
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
+campfind txparks mckinney-falls --from 2026-12-04 --nights 1 --weeks 4
 ```
-python3 -m venv ENV
-source ENV/bin/activate
-pip3 install -r requirements.txt
-python3 app.py
 
-# run this command to exit venv activate mode and return to regular shell environment
-deactivate
+Add `--json` for the same lookup as JSON.
+
+```bash
+campfind txparks mckinney-falls --from 2026-12-04 --nights 1 --weeks 4 --json
+campfind recgov cedar-breaks --from 2026-12-04 --nights 2 --weeks 1
+campfind txparks --list
+campfind recgov --list
 ```
-### Values for reservation_details.json
-There are limited options supported at this time. Some options will have some defaults that you can edit after your reservation is made.
 
-| Key                              | Default Values (type)         | Description  |
-|---                               |---                            |---           |
-| `destination`                    | `""` (string)                 | The Texas State Park you want to visit - should be the first result when searching on the website. |
-| `interest`                       | `""` (string)                 | Options: `camping` or `day pass` |
-| `arrival_date`                   | `"MM/DD/YYYY"` (string)       | First day you want to visit, format is important: `MM/DD/YYYY` |
-| `days_of_stay`                   | `0` (integer)                 | Number of days you want to stay |
-| `number_of_vehicles`             | `1` (integer)                 | how many vehicles |
-| `type_of_vehicle`                | `""` (string)                 | type of vehicle. options: `car`, `truck`, `suv`, `van` |
-| `number_of_adults`               | `0` (integer)                 | how many adults are going |
-| `number_of_children`             | `0` (integer)                 | how many children are going |
-| `wait_for_opening`               | `false` (bool)                | continuously check for an opening and auto book when one is available |
-| `camp_site_selection`            | empty strings object          | Camp Site Options |
-| `camp_site_selection.type`       | `""` (string)                 | Camp Site type. Supported options: `tent` |
-| `camp_site_selection.preference` | `"any"` (string)              | Camp Site preference. Supported options: `electric`, `primitive`, `any` |
-| `day_pass_selection`             | empty strings object          | Day Pass Options |
-| `day_pass_selection.preferences` | `[ "either" ]` (array)        | length should match `days_of_stay`. values are: `morning`, `afternoon`, `either` |
-| `credit_card`                    | empty strings object          | credit card information for booking |
+From Python:
 
-## What is the application doing exactly?
-I use [selenium web driver for python](https://selenium-python.readthedocs.io/index.html) to navigate to the Texas State Park website, login, and go through the reservation steps. If the days the requestor want to go to the park are available, then I look at the requestor's preferences for morning or afternoon visitation and make the reservation, including payment. 
+```python
+from datetime import date
+from campfind import search
 
-If the dates are already booked then the application continuously checks for availability on the requested days until either, a) an available spot opens up, then it books the opening, or b) stops after the requestor's visitation date has passed.
+result = search("txparks", "mckinney-falls", date(2026, 12, 4), nights=1, weeks=4)
+print(result.days[0].available, result.days[0].total)
+```
 
-## Future Features
+## How to read the table
 
-"...a work is never truly completed [...] but abandoned..." Paul Valéry
+`Open` means you can book that arrival online. `--nights 2` means the site is free for the whole stay, not just the first night.
 
-Nice-to-have features:
-- add features for reserving more camp grounds. currently only `tent` camp option is available
-- add json value validation for `reservation_details.json` and validate against website limits
-- replace `time.sleep` with `WebDriverWait` - better practice with selenium to wait for an element than an arbitrary sleep time
-- add deploy code for application so that people do not have to run the code locally on their computer
-- add testing
+`Total` is how many sites of that kind the grid listed. A Saturday that reads `0` open and `82` total is full for online booking.
 
-## Questions or feedback?
-Feel free to submit a github issue or pull request
+`walk-up` and `phone-only` are shown when the park marks a site that way. Those are not counted as open.
+
+The price is the published nightly rate for that site type. It is not a checkout quote.
+
+## Parks near Austin
+
+Texas State Parks, checked against the live park directory:
+
+| Name you can type | Park | Id |
+| --- | --- | --- |
+| mckinney-falls | McKinney Falls State Park | 1200066 |
+| pedernales-falls | Pedernales Falls State Park | 1200068 |
+| inks-lake | Inks Lake State Park | 1200062 |
+| bastrop | Bastrop State Park | 1200052 |
+| guadalupe-river | Guadalupe River State Park | 1200059 |
+| enchanted-rock | Enchanted Rock State Natural Area | 1200056 |
+
+Other Texas parks work by full name (`campfind txparks "Garner State Park" --from 2026-12-04`). The tool reads that name from the public park directory.
+
+Recreation.gov campgrounds on Army Corps lakes near Austin:
+
+| Name you can type | Park | Lake | Id |
+| --- | --- | --- | --- |
+| cedar-breaks | Cedar Breaks Park | Georgetown Lake | 232544 |
+| jim-hogg | Jim Hogg Park | Georgetown Lake | 232612 |
+| tejas | Tejas Park | Georgetown Lake | 234643 |
+| russell | Russell Park | Georgetown Lake | 234665 |
+| taylor | Taylor Park | Granger Lake | 232718 |
+| wilson-h-fox | Wilson H Fox Park | Granger Lake | 232748 |
+| willis-creek | Willis Creek Park | Granger Lake | 232745 |
+| friendship | Friendship Park | Granger Lake | 233383 |
+
+You can also pass a Recreation.gov facility id, or a campground name. If several campgrounds match, campfind lists them and stops.
+
+## Tests
+
+```bash
+pip install -e ".[dev]"
+pytest
+```
+
+HTML and JSON fixtures live in `tests/fixtures/`. They are trimmed copies of the real page and API shapes. `pytest` does not call the parks.
+
+## Where the ideas came from
+
+This repo used to be a Selenium script that logged in and paid for a site. That is gone, including the credit card config. Booking stays manual.
+
+Ideas, not copied code:
+
+- [juftin/camply](https://github.com/juftin/camply) (MIT). Separate providers, a small HTTP client with backoff, and Recreation.gov's month grid at `/api/camps/availability/campground/{id}/month`. No camply code is included here.
+- [flexyford/texas-state-park-reservations-api](https://github.com/flexyford/texas-state-park-reservations-api) and [flexyford/tx-state-park-reservations](https://github.com/flexyford/tx-state-park-reservations). No license file. Last push in 2017, against the old reserveworld site. The useful idea was a park list plus per-day counts by site type. None of that code is included.
+- The old script in this repo showed which ReserveAmerica pages a person clicks. The lookup itself is plain HTTP against the pages the site renders without a login.
+
+## Limits
+
+- Texas availability is HTML. The first page is `campgroundDetails.do` (a normal search). If the park has more than 25 sites, the next pages are the same `campsitePaging.do` request the website makes. ReserveAmerica's robots.txt asks crawlers not to hit that path. campfind only does it for the one park you asked about, about one request a second, and it caches the result for 10 minutes. Pass `--refresh` to look again. Pass `--cache-seconds 0` to skip the cache.
+- No login, no captcha solving, and no headless browser. If the park page starts requiring one, this tool will fail instead of trying to get around it.
+- A Texas lookup of 4 weeks is two 14-day grids. `--weeks` can be 1 to 8. `--nights` can be 1 to 14.
+- The Texas price is the rate table on the park page (by site type). The page says that price skips discounts, entrance fees, and taxes.
+- Recreation.gov prices show up only when their rates feed has a season that covers your date. A lot of seasons in that feed are old. When none cover the date, the price is empty.
+- Counts change all day. A full Saturday can open up when someone cancels. This tool does not hold the site for you.
